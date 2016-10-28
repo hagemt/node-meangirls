@@ -1,0 +1,28 @@
+{
+  "name": "meangirls",
+  "version": "0.1.0",
+  "description": "JavaScript re-implementation of Aphyr's gem for CRDTs",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint *.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hagemt/meangirls.git"
+  },
+  "keywords": [
+    "Convergent",
+    "Replicated",
+    "Data",
+    "Types"
+  ],
+  "author": "Tor Hagemann <tor.hagemann@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hagemt/meangirls/issues"
+  },
+  "homepage": "https://github.com/hagemt/meangirls#readme",
+  "devDependencies": {
+    "eslint": "^3"
+  }
+}
