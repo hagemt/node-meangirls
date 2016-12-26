@@ -1,13 +1,13 @@
 /* eslint-env es6, node */
 const { EventEmitter } = require('events');
 
-const SETS = new WeakMap();
+const SETS = new WeakMap(); // private
 
 class GSet extends EventEmitter {
 
 	constructor () {
 		super(); // mistake to inherit?
-		SETS.set(this, { e: new Set() });
+		SETS.set(this, Object.freeze({ e: new Set() }));
 	}
 
 	add (element) {
@@ -22,9 +22,9 @@ class GSet extends EventEmitter {
 		return { e: [...e], type: 'g-set' };
 	}
 
-	get values () {
+	* [Symbol.iterator] () {
 		const { e } = SETS.get(this);
-		return new Set(e);
+		for (const ee of e) yield ee;
 	}
 
 }
@@ -33,7 +33,7 @@ class TwoPSet extends EventEmitter {
 
 	constructor () {
 		super(); // mistake to inherit?
-		SETS.set(this, { a: new Set(), r: new Set() });
+		SETS.set(this, Object.freeze({ a: new Set(), r: new Set() }));
 	}
 
 	add (element) {
@@ -55,12 +55,19 @@ class TwoPSet extends EventEmitter {
 		return this;
 	}
 
-	get values () {
+	* [Symbol.iterator] () {
 		const { a, r } = SETS.get(this);
-		return new Set([...a].filter(e => !r.has(e)));
+		for (const e of a) {
+			if (!r.has(e)) yield e;
+		}
 	}
 
 }
+
+// TODO (tohagema): implement these sets, similarly:
+// https://github.com/aphyr/meangirls#lww-element-set
+// https://github.com/aphyr/meangirls#or-set
+// https://github.com/aphyr/meangirls#max-change-sets
 
 module.exports = { GSet, TwoPSet };
 module.exports.default = module.exports;

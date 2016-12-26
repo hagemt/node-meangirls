@@ -1,8 +1,8 @@
 /* eslint-env es6, node */
-const Counters = require('./Counters');
+const counters = require('./counters');
 const merge = require('./merge');
 const parse = require('./parse');
-const Sets = require('./Sets');
+const sets = require('./sets');
 
-module.exports = { Counters, merge, parse, Sets };
+module.exports = Object.assign({ merge, parse }, counters, sets);
 module.exports.default = module.exports;

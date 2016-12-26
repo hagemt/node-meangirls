@@ -1,38 +1,45 @@
 /* eslint-env es6, node */
-const { GCounter, PNCounter } = require('./Counters');
-const { GSet, TwoPSet } = require('./Sets');
+const { GCounter, PNCounter } = require('./counters');
+const { GSet, TwoPSet } = require('./sets');
 
-const parse = (anyCRDT) => {
+const parseCRDT = (anyCRDT) => {
 	const type = (typeof anyCRDT === 'object') ? anyCRDT.type : undefined;
 	switch (type) {
 	case '2p-set': {
-		const { a, r } = anyCRDT;
+		const { a = [], r = [] } = anyCRDT;
 		const set = new TwoPSet();
-		a.forEach((e) => { set.add(e); });
-		r.forEach((e) => { set.remove(e); });
+		for (const e of a) set.add(e);
+		for (const e of r) set.remove(e);
 		return set;
 	}
 	case 'g-counter': {
-		const { e } = anyCRDT;
+		const { e = {} } = anyCRDT;
 		const counter = new GCounter();
-		Object.keys(e).forEach((key) => { counter.bump(key, e[key]); });
+		for (const key of Object.keys(e)) {
+			counter.bump(key, e[key]);
+		}
 		return counter;
 	}
 	case 'g-set': {
-		const { e } = anyCRDT;
+		const { e = [] } = anyCRDT;
 		const set = new GSet();
-		e.forEach((ee) => { set.add(ee); });
+		for (const ee of e) set.add(ee);
 		return set;
 	}
 	case 'pn-counter': {
-		const { n, p } = anyCRDT;
+		const { n = {}, p = {} } = anyCRDT;
 		const counter = new PNCounter();
-		Object.keys(n).forEach((key) => { counter.bump(key, n[key]); });
-		Object.keys(p).forEach((key) => { counter.bump(key, p[key]); });
+		for (const key of Object.keys(n)) {
+			counter.bump(key, n[key]);
+		}
+		for (const key of Object.keys(p)) {
+			counter.bump(key, p[key]);
+		}
 		return counter;
 	}
-	default: throw new TypeError(`unknown CRDT: ${type}`);
+	default:
+		throw new TypeError(`unknown CRDT type: ${type}`);
 	}
 };
 
-module.exports = { default: parse, parse };
+module.exports = parseCRDT;
