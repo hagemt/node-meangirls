@@ -33,21 +33,6 @@ class GCounter extends EventEmitter {
 		COUNTERS.set(this, Object.freeze({ e: new Map() }));
 	}
 
-	bump (actor = null, delta = 1) {
-		if (!(delta > 0)) {
-			throw new TypeError('must #update with a positive Number');
-		}
-		const { e } = COUNTERS.get(this);
-		const update = updateMap(e, actor, (value = 0) => value + delta);
-		this.emit('update', update, actor, delta);
-		return this;
-	}
-
-	inspect () {
-		const { e } = COUNTERS.get(this);
-		return { e: toObject(e), type: 'g-counter' };
-	}
-
 	merge (other) {
 		if (!(other instanceof GCounter)) {
 			throw new TypeError('expected GCounter');
@@ -61,9 +46,31 @@ class GCounter extends EventEmitter {
 		return merged;
 	}
 
+	bump (actor = null, delta = 1) {
+		if (!(delta > 0)) {
+			throw new TypeError('must #update with a positive Number');
+		}
+		const { e } = COUNTERS.get(this);
+		const update = updateMap(e, actor, (value = 0) => value + delta);
+		this.emit('update', update, actor, delta);
+		return this;
+	}
+
 	get value () {
 		const { e } = COUNTERS.get(this);
 		return sumValues(e);
+	}
+
+	static fromJSON ({ e = {} }) {
+		const counter = new GCounter();
+		const { e: _e } = COUNTERS.get(counter);
+		for (const key of Object.keys(e)) _e.set(key, e[key]);
+		return counter;
+	}
+
+	static toJSON (anyGCounter) {
+		const { e } = COUNTERS.get(anyGCounter);
+		return { e: toObject(e), type: 'g-counter' };
 	}
 
 }
@@ -73,22 +80,6 @@ class PNCounter extends EventEmitter {
 	constructor () {
 		super(); // mistake to inherit?
 		COUNTERS.set(this, Object.freeze({ n: new Map(), p: new Map() }));
-	}
-
-	bump (actor = null, delta = 1) {
-		const { n, p } = COUNTERS.get(this);
-		const map = (delta < 1) ? n : p;
-		const number = Math.abs(delta) || 0;
-		if (number) {
-			const update = updateMap(map, actor, (value = 0) => value + number);
-			this.emit('update', update, actor, delta);
-		}
-		return this;
-	}
-
-	inspect () {
-		const { n, p } = COUNTERS.get(this);
-		return { n: toObject(n), p: toObject(p), type: 'pn-counter' };
 	}
 
 	merge (other) {
@@ -106,11 +97,45 @@ class PNCounter extends EventEmitter {
 		return merged;
 	}
 
+	bump (actor = null, delta = 1) {
+		const { n, p } = COUNTERS.get(this);
+		const map = (delta < 1) ? n : p;
+		const number = Math.abs(delta) || 0;
+		if (number) {
+			const update = updateMap(map, actor, (value = 0) => value + number);
+			this.emit('update', update, actor, delta);
+		}
+		return this;
+	}
+
 	get value () {
 		const { n, p } = COUNTERS.get(this);
 		return sumValues(p) - sumValues(n);
 	}
 
+	static fromJSON ({ n = {}, p = {} }) {
+		const counter = new PNCounter();
+		const { n: _n, p: _p } = COUNTERS.get(this);
+		for (const key of Object.keys(n)) _n.set(key, n[key]);
+		for (const key of Object.keys(p)) _p.set(key, p[key]);
+		return counter;
+	}
+
+	static toJSON (anyPNCounter) {
+		const { n, p } = COUNTERS.get(anyPNCounter);
+		return { n: toObject(n), p: toObject(p), type: 'pn-counter' };
+	}
+
+}
+
+const merge2 = (a, b) => a.merge(b); // "static"
+Object.defineProperty(merge2, 'name', { value: 'merge' });
+
+for (const T of [GCounter, PNCounter]) {
+	T.prototype.inspect = function inspect () {
+		return T.toJSON(this);
+	};
+	Object.defineProperty(T, 'merge', { value: merge2 });
 }
 
 module.exports = { GCounter, PNCounter };
