@@ -1,5 +1,8 @@
 /* eslint-env es6, node */
 
-const mergeCRDT = (...items) => items.reduce((a, b) => a.merge(b));
+const merge2 = (a, b) => a.merge(b); // generic Function
+Object.defineProperty(merge2, 'name', { value: 'merge' });
+
+const mergeCRDT = (...items) => items.reduce(merge2);
 
 module.exports = mergeCRDT;
