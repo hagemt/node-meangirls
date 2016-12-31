@@ -7,13 +7,13 @@ const isObject = _ => !!_ && (typeof _ === 'object');
 const parseCRDT = (anyCRDT = null) => {
 	const type = isObject(anyCRDT) ? anyCRDT.type : undefined;
 	switch (type) {
-	case '2p-set': return TwoPSet.parse(anyCRDT);
-	case 'g-counter': return GCounter.parse(anyCRDT);
-	case 'g-set': return GSet.parse(anyCRDT);
-	case 'lww-e-set': return LWWESet.parse(anyCRDT);
-	case 'mc-set': return MCSet.parse(anyCRDT);
-	case 'or-set': return ORSet.parse(anyCRDT);
-	case 'pn-counter': return PNCounter.parse(anyCRDT);
+	case '2p-set': return TwoPSet.fromJSON(anyCRDT);
+	case 'g-counter': return GCounter.fromJSON(anyCRDT);
+	case 'g-set': return GSet.fromJSON(anyCRDT);
+	case 'lww-e-set': return LWWESet.fromJSON(anyCRDT);
+	case 'mc-set': return MCSet.fromJSON(anyCRDT);
+	case 'or-set': return ORSet.fromJSON(anyCRDT);
+	case 'pn-counter': return PNCounter.fromJSON(anyCRDT);
 	default: throw new TypeError(`unknown CRDT type: ${type}`);
 	}
 };
