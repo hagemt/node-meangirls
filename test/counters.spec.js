@@ -58,6 +58,12 @@ describe('GCounter', () => {
 				GCounter.fromJSON(json).should.have.property('value', json.e.test);
 			});
 
+			it('throws if given invalid JSON', () => {
+				const unsafe = { null: Number.MIN_VALUE };
+				(() => GCounter.fromJSON()).should.throw();
+				(() => GCounter.fromJSON({ e: unsafe })).should.throw();
+			});
+
 		});
 
 		describe('merge', () => {
@@ -175,6 +181,13 @@ describe('PNCounter', () => {
 				const sum1 = json.p.one + json.p.two;
 				const sum2 = json.n.one + json.n.two;
 				counter.should.have.property('value', sum1 - sum2);
+			});
+
+			it('throws if given invalid JSON', () => {
+				const unsafe = { null: Number.MIN_VALUE };
+				(() => PNCounter.fromJSON()).should.throw();
+				(() => PNCounter.fromJSON({ p: unsafe, n: {} })).should.throw();
+				(() => PNCounter.fromJSON({ p: {}, n: unsafe })).should.throw();
 			});
 
 		});

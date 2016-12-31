@@ -53,7 +53,7 @@ class GCounter { // extends EventEmitter?
 	update (delta = 1, actor = null) {
 		const number = Number(delta);
 		if (!isSafeNumber(number)) {
-			throw new TypeError('must #update with a finite Number (above EPS)');
+			throw new Error('must #update with a safe (finite, positive) Number');
 		}
 		const { e } = COUNTERS.get(this);
 		updateMap(e, actor, plusSafeNumber(number));
@@ -71,7 +71,10 @@ class GCounter { // extends EventEmitter?
 		const { e } = COUNTERS.get(counter);
 		for (const key of Object.keys(elements)) {
 			const number = Number(elements[key]);
-			if (isSafeNumber(number)) e.set(key, number);
+			if (!isSafeNumber(number)) {
+				throw new Error(`the value for "${key}" is an unsafe Number`);
+			}
+			e.set(key, number);
 		}
 		return counter;
 	}
@@ -107,16 +110,14 @@ class PNCounter { // extends EventEmitter?
 
 	update (delta = 1, actor = null) {
 		const number = Number(delta);
-		if (Number.isNaN(number) || !Number.isFinite(number)) {
-			throw new TypeError('must #update with a finite Number');
-		}
 		const abs = Math.abs(number);
-		if (!(abs < Number.EPSILON)) {
-			const { n, p } = COUNTERS.get(this);
-			const positive = (Math.sign(number) === 1);
-			updateMap(positive ? p : n, actor, plusSafeNumber(abs));
-			//this.emit('update', update, actor, delta);
+		if (!isSafeNumber(abs)) {
+			throw new Error('must #update with a safe (finite) Number');
 		}
+		const sign = Math.sign(number);
+		const { n, p } = COUNTERS.get(this);
+		updateMap((sign === 1) ? p : n, actor, plusSafeNumber(abs));
+		//this.emit('update', update, actor, delta);
 		return this;
 	}
 
@@ -130,11 +131,17 @@ class PNCounter { // extends EventEmitter?
 		const { n, p } = COUNTERS.get(counter);
 		for (const key of Object.keys(positives)) {
 			const number = Number(positives[key]);
-			if (isSafeNumber(number)) p.set(key, number);
+			if (!isSafeNumber(number)) {
+				throw new Error(`the value for "${key}" is an unsafe Number`);
+			}
+			p.set(key, number);
 		}
 		for (const key of Object.keys(negatives)) {
 			const number = Number(negatives[key]);
-			if (isSafeNumber(number)) n.set(key, number);
+			if (!isSafeNumber(number)) {
+				throw new Error(`the value for "${key}" is an unsafe Number`);
+			}
+			n.set(key, number);
 		}
 		return counter;
 	}
