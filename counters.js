@@ -133,6 +133,7 @@ Object.defineProperty(merge2, 'name', { value: 'merge' });
 
 for (const T of [GCounter, PNCounter]) {
 	T.prototype.inspect = function inspect () {
+		/* istanbul ignore next */
 		return T.toJSON(this);
 	};
 	Object.defineProperty(T, 'merge', { value: merge2 });

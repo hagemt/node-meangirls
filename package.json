@@ -11,6 +11,8 @@
   },
   "devDependencies": {
     "eslint": "^3",
+    "nyc": "^10",
+    "should": "^11",
     "mocha": "^3"
   },
   "eslint": {
@@ -27,7 +29,9 @@
     "url": "git+https://github.com/hagemt/meangirls.git"
   },
   "scripts": {
-    "test": "mocha test/spec.js",
-    "posttest": "eslint **/*.js"
+    "eslint": "eslint **/*.js",
+    "test": "nyc mocha",
+    "test:watch": "watch --color 'npm test -- --colors'",
+    "posttest": "npm run eslint"
   }
 }
