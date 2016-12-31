@@ -2,10 +2,14 @@
 const { EventEmitter } = require('events');
 
 const COUNTERS = new WeakMap(); // private
-const increment = (value = 0) => (value + 1);
+const plus = a => (b = 0) => (a + b); // curried
+const increment = plus(1); // (_ = 0) => (1 + _)
 
 const sumValues = (map, m = map.size) => {
-	if (m === map.m) return map.n; // memoized sum
+	// FIXME (tohagema): figure out proper mechanism
+	// An update may change values w/o affecting size.
+	// The line below is insuffient for (in)validation:
+	//if (m === map.m) return map.n; // memoized sum
 	let sum = 0; // valid map.n as long as map.m = m
 	for (const value of map.values()) sum += value;
 	Object.assign(map, { m, n: sum });
@@ -46,12 +50,13 @@ class GCounter extends EventEmitter {
 		return merged;
 	}
 
-	bump (actor = null, delta = 1) {
-		if (!(delta > 0)) {
-			throw new TypeError('must #update with a positive Number');
+	update (delta = 1, actor = null) {
+		const number = Number(delta);
+		if (Number.isNaN(number) || !Number.isFinite(number) || number < Number.EPSILON) {
+			throw new TypeError('must #update with a finite Number (above EPS)');
 		}
 		const { e } = COUNTERS.get(this);
-		const update = updateMap(e, actor, (value = 0) => value + delta);
+		const update = updateMap(e, actor, plus(number));
 		this.emit('update', update, actor, delta);
 		return this;
 	}
@@ -97,12 +102,16 @@ class PNCounter extends EventEmitter {
 		return merged;
 	}
 
-	bump (actor = null, delta = 1) {
-		const { n, p } = COUNTERS.get(this);
-		const map = (delta < 1) ? n : p;
-		const number = Math.abs(delta) || 0;
-		if (number) {
-			const update = updateMap(map, actor, (value = 0) => value + number);
+	update (delta = 1, actor = null) {
+		const number = Number(delta);
+		if (Number.isNaN(number) || !Number.isFinite(number)) {
+			throw new TypeError('must #update with a finite Number');
+		}
+		const abs = Math.abs(number);
+		if (!(abs < Number.EPSILON)) {
+			const { n, p } = COUNTERS.get(this);
+			const positive = (Math.sign(number) === 1);
+			const update = updateMap(positive ? p : n, actor, plus(abs));
 			this.emit('update', update, actor, delta);
 		}
 		return this;
@@ -115,7 +124,7 @@ class PNCounter extends EventEmitter {
 
 	static fromJSON ({ n = {}, p = {} }) {
 		const counter = new PNCounter();
-		const { n: _n, p: _p } = COUNTERS.get(this);
+		const { n: _n, p: _p } = COUNTERS.get(counter);
 		for (const key of Object.keys(n)) _n.set(key, n[key]);
 		for (const key of Object.keys(p)) _p.set(key, p[key]);
 		return counter;
