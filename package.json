@@ -29,9 +29,11 @@
     "url": "git+https://github.com/hagemt/meangirls.git"
   },
   "scripts": {
+    "coverage": "nyc",
     "eslint": "eslint **/*.js",
-    "test": "nyc mocha",
-    "test:watch": "watch --color 'npm test -- --colors'",
+    "test": "npm run coverage -- --reporter text-summary mocha # see test",
+    "test:report": "npm run coverage -- --reporter html mocha # see coverage",
+    "test:watch": "watch --color 'npm test -- --colors --reporter min'",
     "posttest": "npm run eslint"
   }
 }

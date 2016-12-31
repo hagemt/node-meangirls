@@ -66,7 +66,7 @@ class GCounter extends EventEmitter {
 		return sumValues(e);
 	}
 
-	static fromJSON ({ e = {} }) {
+	static fromJSON ({ e }) {
 		const counter = new GCounter();
 		const { e: _e } = COUNTERS.get(counter);
 		for (const key of Object.keys(e)) _e.set(key, e[key]);
@@ -122,7 +122,7 @@ class PNCounter extends EventEmitter {
 		return sumValues(p) - sumValues(n);
 	}
 
-	static fromJSON ({ n = {}, p = {} }) {
+	static fromJSON ({ n, p }) {
 		const counter = new PNCounter();
 		const { n: _n, p: _p } = COUNTERS.get(counter);
 		for (const key of Object.keys(n)) _n.set(key, n[key]);
@@ -141,8 +141,8 @@ const merge2 = (a, b) => a.merge(b); // "static"
 Object.defineProperty(merge2, 'name', { value: 'merge' });
 
 for (const T of [GCounter, PNCounter]) {
+	/* istanbul ignore next */
 	T.prototype.inspect = function inspect () {
-		/* istanbul ignore next */
 		return T.toJSON(this);
 	};
 	Object.defineProperty(T, 'merge', { value: merge2 });
