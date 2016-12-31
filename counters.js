@@ -1,18 +1,17 @@
 /* eslint-env es6, node */
-const { EventEmitter } = require('events');
+//const { EventEmitter } = require('events');
 
 const COUNTERS = new WeakMap(); // private
-const plus = a => (b = 0) => (a + b); // curried
-const increment = plus(1); // (_ = 0) => (1 + _)
 
-const sumValues = (map, m = map.size) => {
-	// FIXME (tohagema): figure out proper mechanism
-	// An update may change values w/o affecting size.
-	// The line below is insuffient for (in)validation:
-	//if (m === map.m) return map.n; // memoized sum
-	let sum = 0; // valid map.n as long as map.m = m
+const isSafeNumber = n => !Number.isNaN(n) && Number.isFinite(n) && !(n < Number.EPSILON);
+
+const plusSafeNumber = a => (b = 0) => (a + b);
+
+const sumValues = (map, cached = map.sumCached) => {
+	if (cached) return map.sum; // to avoid another sum
+	let sum = 0; // valid as long as Map not mutated
 	for (const value of map.values()) sum += value;
-	Object.assign(map, { m, n: sum });
+	Object.assign(map, { sum, sumCached: true });
 	return sum;
 };
 
@@ -23,17 +22,18 @@ const toObject = (map, object = {}) => {
 	return object;
 };
 
-const updateMap = (map, key, update = increment) => {
+const updateMap = (map, key, update) => {
 	const oldValue = map.get(key);
 	const newValue = update(oldValue);
 	map.set(key, newValue);
-	return [newValue, oldValue];
+	map.sumCached = false;
+	//return [newValue, oldValue];
 };
 
-class GCounter extends EventEmitter {
+class GCounter { // extends EventEmitter?
 
 	constructor () {
-		super(); // mistake to inherit?
+		//super(); // mistake to inherit?
 		COUNTERS.set(this, Object.freeze({ e: new Map() }));
 	}
 
@@ -45,19 +45,19 @@ class GCounter extends EventEmitter {
 		const { e: e0 } = COUNTERS.get(merged);
 		const { e: e1 } = COUNTERS.get(other);
 		const { e: e2 } = COUNTERS.get(this);
-		for (const [k, v] of e1) e0.set(k, v + (e0.get(k) || 0));
-		for (const [k, v] of e2) e0.set(k, v + (e0.get(k) || 0));
+		for (const [k, v] of e1) updateMap(e0, k, plusSafeNumber(v));
+		for (const [k, v] of e2) updateMap(e0, k, plusSafeNumber(v));
 		return merged;
 	}
 
 	update (delta = 1, actor = null) {
 		const number = Number(delta);
-		if (Number.isNaN(number) || !Number.isFinite(number) || number < Number.EPSILON) {
+		if (!isSafeNumber(number)) {
 			throw new TypeError('must #update with a finite Number (above EPS)');
 		}
 		const { e } = COUNTERS.get(this);
-		const update = updateMap(e, actor, plus(number));
-		this.emit('update', update, actor, delta);
+		updateMap(e, actor, plusSafeNumber(number));
+		//this.emit('update', update, actor, delta);
 		return this;
 	}
 
@@ -66,10 +66,13 @@ class GCounter extends EventEmitter {
 		return sumValues(e);
 	}
 
-	static fromJSON ({ e }) {
+	static fromJSON ({ e: elements }) {
 		const counter = new GCounter();
-		const { e: _e } = COUNTERS.get(counter);
-		for (const key of Object.keys(e)) _e.set(key, e[key]);
+		const { e } = COUNTERS.get(counter);
+		for (const key of Object.keys(elements)) {
+			const number = Number(elements[key]);
+			if (isSafeNumber(number)) e.set(key, number);
+		}
 		return counter;
 	}
 
@@ -80,10 +83,10 @@ class GCounter extends EventEmitter {
 
 }
 
-class PNCounter extends EventEmitter {
+class PNCounter { // extends EventEmitter?
 
 	constructor () {
-		super(); // mistake to inherit?
+		//super(); // mistake to inherit?
 		COUNTERS.set(this, Object.freeze({ n: new Map(), p: new Map() }));
 	}
 
@@ -95,10 +98,10 @@ class PNCounter extends EventEmitter {
 		const { n: n0, p: p0 } = COUNTERS.get(merged);
 		const { n: n1, p: p1 } = COUNTERS.get(other);
 		const { n: n2, p: p2 } = COUNTERS.get(this);
-		for (const [k, v] of n1) n0.set(k, v + (n0.get(k) || 0));
-		for (const [k, v] of n2) n0.set(k, v + (n0.get(k) || 0));
-		for (const [k, v] of p1) p0.set(k, v + (p0.get(k) || 0));
-		for (const [k, v] of p2) p0.set(k, v + (p0.get(k) || 0));
+		for (const [k, v] of n1) updateMap(n0, k, plusSafeNumber(v));
+		for (const [k, v] of n2) updateMap(n0, k, plusSafeNumber(v));
+		for (const [k, v] of p1) updateMap(p0, k, plusSafeNumber(v));
+		for (const [k, v] of p2) updateMap(p0, k, plusSafeNumber(v));
 		return merged;
 	}
 
@@ -111,8 +114,8 @@ class PNCounter extends EventEmitter {
 		if (!(abs < Number.EPSILON)) {
 			const { n, p } = COUNTERS.get(this);
 			const positive = (Math.sign(number) === 1);
-			const update = updateMap(positive ? p : n, actor, plus(abs));
-			this.emit('update', update, actor, delta);
+			updateMap(positive ? p : n, actor, plusSafeNumber(abs));
+			//this.emit('update', update, actor, delta);
 		}
 		return this;
 	}
@@ -122,11 +125,17 @@ class PNCounter extends EventEmitter {
 		return sumValues(p) - sumValues(n);
 	}
 
-	static fromJSON ({ n, p }) {
+	static fromJSON ({ n: negatives, p: positives }) {
 		const counter = new PNCounter();
-		const { n: _n, p: _p } = COUNTERS.get(counter);
-		for (const key of Object.keys(n)) _n.set(key, n[key]);
-		for (const key of Object.keys(p)) _p.set(key, p[key]);
+		const { n, p } = COUNTERS.get(counter);
+		for (const key of Object.keys(positives)) {
+			const number = Number(positives[key]);
+			if (isSafeNumber(number)) p.set(key, number);
+		}
+		for (const key of Object.keys(negatives)) {
+			const number = Number(negatives[key]);
+			if (isSafeNumber(number)) n.set(key, number);
+		}
 		return counter;
 	}
 

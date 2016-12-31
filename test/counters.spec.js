@@ -62,7 +62,7 @@ describe('GCounter', () => {
 
 		describe('merge', () => {
 
-			it('combines two GCounters', () => {
+			it('combines two GCounters, passed as arguments', () => {
 				const one = new GCounter();
 				const two = new GCounter();
 				one.update(1, 'one');
@@ -74,7 +74,7 @@ describe('GCounter', () => {
 				three.should.have.property('value', 3);
 			});
 
-			it('will throw if either is not a GCounter', () => {
+			it('will throw if either argument is not a GCounter', () => {
 				const one = new GCounter();
 				const two = new GCounter();
 				(() => GCounter.merge(one, null)).should.throw();
@@ -101,7 +101,7 @@ describe('GCounter', () => {
 
 		it('allows use of JSON as a wire protocol', () => {
 			const one = new GCounter();
-			while (Math.random() < 0.5) one.update();
+			while (Math.random() < 0.5) one.update(Math.random());
 			const two = GCounter.fromJSON(GCounter.toJSON(one));
 			one.should.have.property('value', two.value);
 		});
@@ -160,19 +160,21 @@ describe('PNCounter', () => {
 
 	});
 
-	describe('static methods', () => {
+	describe('static', () => {
 
 		describe('fromJSON', () => {
 
 			it('returns a PNCounter Object', () => {
 				const json = {
-					p: { null: Math.random() },
-					n: { null: Math.random() },
+					p: { one: Math.random(), two: Math.random() },
+					n: { one: Math.random(), two: Math.random() },
 					type: 'pn-counter',
 				};
 				const counter = PNCounter.fromJSON(json);
 				counter.should.be.instanceof(PNCounter);
-				counter.should.have.property('value', json.p[null] - json.n[null]);
+				const sum1 = json.p.one + json.p.two;
+				const sum2 = json.n.one + json.n.two;
+				counter.should.have.property('value', sum1 - sum2);
 			});
 
 		});
@@ -182,13 +184,15 @@ describe('PNCounter', () => {
 			it('combines two PNCounters', () => {
 				const one = new PNCounter();
 				const two = new PNCounter();
-				one.update(1, 'one');
-				two.update(-2, 'two');
+				one.update(1, 'positive');
+				one.update(-2, 'negative');
+				two.update(-1, 'negative');
+				two.update(2, 'positive');
 				const three = PNCounter.merge(one, two);
 				three.should.be.instanceof(PNCounter);
 				three.should.not.equal(one);
 				three.should.not.equal(two);
-				three.should.have.property('value', -1);
+				three.should.have.property('value', 0);
 			});
 
 			it('will throw if either is not a PNCounter', () => {
@@ -219,7 +223,7 @@ describe('PNCounter', () => {
 
 		it('allows use of JSON as a wire protocol', () => {
 			const one = new PNCounter();
-			while (Math.random() < 0.5) one.update();
+			while (Math.random() < 0.5) one.update(Math.random());
 			const two = PNCounter.fromJSON(PNCounter.toJSON(one));
 			one.should.have.property('value', two.value);
 		});
