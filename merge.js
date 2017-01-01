@@ -2,24 +2,23 @@
 const { GCounter, PNCounter } = require('./counters');
 const { GSet, TwoPSet, LWWESet, ORSet, MCSet } = require('./sets');
 
-const COUNTER_TYPES = Object.freeze([GCounter, PNCounter]);
-const SET_TYPES = Object.freeze([GSet, TwoPSet, LWWESet, ORSet, MCSet]);
-
-const sameCRDTs = (first, ...rest) => {
-	const isCRDT = COUNTER_TYPES.includes(first) || SET_TYPES.includes(first);
-	return isCRDT ? rest.every(t => t == first) : false; // pass prototypes
-};
-
-const isObject = _ => !!_ && (typeof _ === 'object');
-const merge2 = (a, b) => a.merge(b); // generic Function
-Object.defineProperty(merge2, 'name', { value: 'merge' });
+const COUNTER_CLASSES = Object.freeze([GCounter, PNCounter]);
+const SET_CLASSES = Object.freeze([GSet, TwoPSet, LWWESet, ORSet, MCSet]);
 
 const mergeCRDTs = (...items) => {
-	const p = items.filter(isObject).map(Object.getPrototypeOf);
-	if (p.length < 2 || p.length !== items.length || sameCRDTs(p)) {
-		throw new TypeError('arguments ALL MUST be of the SAME CRDT');
+	const types = items.map((item) => {
+		for (const T of COUNTER_CLASSES) {
+			if (item instanceof T) return T;
+		}
+		for (const T of SET_CLASSES) {
+			if (item instanceof T) return T;
+		}
+	});
+	if (new Set(types.filter(type => !!type)).size !== 1) {
+		const names = types.map((T = {}) => T.name || 'non-CRDT').join(', ');
+		throw new TypeError(`arguments ALL MUST have SAME CRDT (not: ${names})`);
 	}
-	return items.reduce(merge2);
+	return items.reduce((a, b) => a.merge(b));
 };
 
 module.exports = mergeCRDTs;
