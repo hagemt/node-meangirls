@@ -15,7 +15,7 @@ class GSet extends EventEmitter {
 
 	constructor (...args) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ e: new Set(...args) }));
+		SETS.set(this, Object.freeze({ e: new Set(args) }));
 	}
 
 	contains (element) {
@@ -72,7 +72,7 @@ class TwoPSet extends EventEmitter {
 
 	constructor (...args) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ a: new Set(...args), r: new Set() }));
+		SETS.set(this, Object.freeze({ a: new Set(args), r: new Set() }));
 	}
 
 	contains (element) {
@@ -348,9 +348,10 @@ class ORSet extends EventEmitter {
 
 class MCSet extends EventEmitter {
 
-	constructor () {
+	constructor (...args) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ e: new Map() }));
+		const e = new Map(args.map(arg => ([arg, 1])));
+		SETS.set(this, Object.freeze({ e }));
 	}
 
 	contains (element) {
@@ -399,10 +400,10 @@ class MCSet extends EventEmitter {
 		const { e: e0 } = SETS.get(self);
 		const { e: e1 } = SETS.get(first);
 		const { e: e2 } = SETS.get(second);
-		for (const [element, n] in e1) {
+		for (const [element, n] of e1) {
 			e0.set(element, n + (e0.get(element) || 0));
 		}
-		for (const [element, n] in e2) {
+		for (const [element, n] of e2) {
 			e0.set(element, n + (e0.get(element) || 0));
 		}
 		return self;

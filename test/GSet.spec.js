@@ -8,7 +8,7 @@ describe('GSet', () => {
 		it('creates a Set-like Object', () => {
 			new GSet().should.have.property('size', 0);
 			const array = Array.from({ length: 10 }, (_, i) => i);
-			Array.from(new GSet(array)).should.deepEqual(array);
+			Array.from(new GSet(...array)).should.deepEqual(array);
 		});
 
 	});
@@ -16,9 +16,9 @@ describe('GSet', () => {
 	describe('#contains', () => {
 
 		it('returns true/false, indicating set membership', () => {
-			const set = new GSet([1]);
+			const set = new GSet(1); // singleton
 			set.contains(1).should.equal(true);
-			set.contains(2).should.equal(false);
+			set.contains(0).should.equal(false);
 		});
 
 	});
@@ -55,7 +55,7 @@ describe('GSet', () => {
 
 			it('returns JSON from a GSet', () => {
 				const elements = Array.from({ length: 10 }, (_, i) => i);
-				const json = GSet.toJSON(new GSet(elements));
+				const json = GSet.toJSON(new GSet(...elements));
 				json.should.be.instanceof(Object);
 				json.should.deepEqual({ e: elements, type: 'g-set' });
 			});
@@ -65,8 +65,8 @@ describe('GSet', () => {
 		describe('merge', () => {
 
 			it('returns a new GSet that combines two GSets', () => {
-				const one = new GSet([1]);
-				const two = new GSet([2]);
+				const one = new GSet(1); // singleton
+				const two = new GSet(2); // singleton
 				const three = GSet.merge(one, two);
 				three.should.be.instanceof(GSet);
 				three.should.have.property('size', 2);

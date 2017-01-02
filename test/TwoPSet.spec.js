@@ -6,9 +6,10 @@ describe('TwoPSet', () => {
 	describe('constructor', () => {
 
 		it('creates an empty Set-like Object', () => {
+			new TwoPSet().should.have.property('size', 0);
 			const elements = Array.from({ length: 10 }, (_, i) => i);
-			const set = new TwoPSet(elements);
-			set.should.have.property('size', 10);
+			const set = new TwoPSet(...elements);
+			set.should.have.property('size', elements.length);
 			Array.from(set).should.deepEqual(elements);
 		});
 
@@ -17,7 +18,7 @@ describe('TwoPSet', () => {
 	describe('#contains', () => {
 
 		it('determines set membership', () => {
-			const set = new TwoPSet([0]);
+			const set = new TwoPSet(0); // singleton
 			set.contains(0).should.equal(true);
 			set.contains(1).should.equal(false);
 		});
@@ -57,7 +58,7 @@ describe('TwoPSet', () => {
 		describe('toJSON', () => {
 
 			it('returns JSON', () => {
-				const set = new TwoPSet([1,2]).remove(1);
+				const set = new TwoPSet(1, 2).remove(1);
 				const json = TwoPSet.toJSON(set);
 				json.should.be.instanceof(Object);
 				json.should.deepEqual({
@@ -72,8 +73,8 @@ describe('TwoPSet', () => {
 		describe('merge', () => {
 
 			it('combines two TwoPSets', () => {
-				const one = new TwoPSet([1, 2]).remove(2);
-				const two = new TwoPSet([3, 4]).remove(3);
+				const one = new TwoPSet(1, 2).remove(2);
+				const two = new TwoPSet(3, 4).remove(3);
 				const three = TwoPSet.merge(one, two);
 				three.should.be.instanceof(TwoPSet);
 				Array.from(three).should.deepEqual([1, 4]);
