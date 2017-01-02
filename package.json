@@ -30,9 +30,9 @@
   },
   "scripts": {
     "coverage": "nyc",
-    "eslint": "eslint . test",
-    "test": "npm run coverage -- --reporter text-summary mocha # see test",
-    "test:report": "npm run coverage -- --reporter html mocha # see coverage",
+    "eslint": "eslint .",
+    "test": "npm run coverage -- --reporter text mocha",
+    "test:report": "npm run coverage -- --reporter html mocha",
     "test:watch": "watch --color 'npm test -- --colors --reporter min'",
     "posttest": "npm run eslint"
   }
