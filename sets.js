@@ -13,9 +13,9 @@ const toJSON = (object = null, ...args) => {
 
 class GSet extends EventEmitter {
 
-	constructor (...args) {
+	constructor (...elements) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ e: new Set(args) }));
+		SETS.set(this, Object.freeze({ e: new Set(elements) }));
 	}
 
 	contains (element) {
@@ -70,9 +70,9 @@ class GSet extends EventEmitter {
 
 class TwoPSet extends EventEmitter {
 
-	constructor (...args) {
+	constructor (...elements) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ a: new Set(args), r: new Set() }));
+		SETS.set(this, Object.freeze({ a: new Set(elements), r: new Set() }));
 	}
 
 	contains (element) {
@@ -144,18 +144,25 @@ class TwoPSet extends EventEmitter {
 
 class LWWESet extends EventEmitter {
 
-	constructor (bias = 'r') {
+	constructor (options, ...elements) {
 		super(); // mistake to inherit?
-		// TODO (tohagema): support 'a' bias (and make default)
-		if (bias !== 'r') throw new Error('bias must be "r", for now');
-		SETS.set(this, Object.freeze({ a: new Map(), bias, r: new Map() }));
+		// TODO (tohagema): support 'r' bias (allow specification)
+		const { bias = 'a', zero = new Date() } = Object(options);
+		if (bias !== 'a') throw new Error('bias must be "a", for now');
+		const a = new Map(elements.map(e => [e, zero])); // value: ordered
+		SETS.set(this, Object.freeze({ a, bias, r: new Map() }));
+	}
+
+	get bias () {
+		const { bias } = SETS.get(this);
+		return bias;
 	}
 
 	contains (key) {
 		const { a, r } = SETS.get(this);
 		if (!a.has(key)) return false;
 		if (!r.has(key)) return true;
-		return r.get(key) < a.get(key);
+		return !(a.get(key) < r.get(key));
 	}
 
 	insert (key, value = new Date()) {
@@ -178,27 +185,29 @@ class LWWESet extends EventEmitter {
 
 	* [Symbol.iterator] () {
 		const { a, r } = SETS.get(this);
-		for (const [k, v] in a) {
-			if (!r.has(k) || r.get(k) < v) yield k;
+		for (const [k, v] of a) {
+			if (!r.has(k) || !(v < r.get(k))) yield k;
 		}
 	}
 
 	static fromJSON ({ bias, e }, ...args) {
-		const start = new Date();
-		const set = new LWWESet(bias);
+		const set = new LWWESet({ bias });
 		const { a, r } = SETS.get(set);
-		for (const tuple of e) {
-			const [anyJSON, aDate, rDate] = tuple;
-			const element = JSON.parse(anyJSON, ...args);
-			if (tuple.length === 1) {
-				a.set(element, start);
-			}
-			if (tuple.length === 2) {
-				a.set(element, new Date(aDate));
-			}
-			if (tuple.length === 3) {
-				a.set(element, new Date(aDate));
-				r.set(element, new Date(rDate));
+		const zero = new Date();
+		for (const ee of e) {
+			switch (Array.isArray(ee) ? ee.length : 0) {
+			case 1:
+				a.set(JSON.parse(ee[0], ...args), zero);
+				break;
+			case 2:
+				a.set(JSON.parse(ee[0], ...args), new Date(ee[1]));
+				break;
+			case 3:
+				a.set(JSON.parse(ee[0], ...args), new Date(ee[1]));
+				r.set(JSON.parse(ee[0], ...args), new Date(ee[2]));
+				break;
+			default:
+				throw new Error(`invalid element: ${ee}`);
 			}
 		}
 		return set;
@@ -212,17 +221,13 @@ class LWWESet extends EventEmitter {
 		const { a: a0, r: r0 } = SETS.get(self);
 		const { a: a1, r: r1 } = SETS.get(first);
 		const { a: a2, r: r2 } = SETS.get(second);
-		for (const [k, v] in a1) {
-			if (!a0.has(k) || a0.get(k) < v) a0.put(k, v);
+		for (const [k, v] of a1) a0.set(k, v);
+		for (const [k, v] of r1) r0.set(k, v);
+		for (const [k, v] of a2) {
+			if (!(a0.has(k) && v < a0.get(k))) a0.set(k, v);
 		}
-		for (const [k, v] in a2) {
-			if (!a0.has(k) || a0.get(k) < v) a0.put(k, v);
-		}
-		for (const [k, v] in r1) {
-			if (!r0.has(k) || r0.get(k) < v) r0.put(k, v);
-		}
-		for (const [k, v] in r2) {
-			if (!r0.has(k) || r0.get(k) < v) r0.put(k, v);
+		for (const [k, v] of r2) {
+			if (!(r0.has(k) && v < r0.get(k))) r0.set(k, v);
 		}
 		return self;
 	}
@@ -240,9 +245,9 @@ class LWWESet extends EventEmitter {
 
 }
 
-const isString = s => (typeof s === 'string') || (s instanceof String);
-const toNumber = s => Number(s.toString().replace(/^Symbol\(|\)$/g, ''));
 const getMapSet = (k, m = new Map()) => m.has(k) ? m.get(k) : new Set();
+const isString = s => (typeof s === 'string') || (s instanceof String);
+const tagString = s => s.toString().replace(/^Symbol\(|\)$/g, '');
 
 const memoize = (f, resolver = (first => first)) => {
 	if (typeof f !== 'function' || typeof resolver !== 'function') {
@@ -271,9 +276,11 @@ const tagFunction = () => {
 
 class ORSet extends EventEmitter {
 
-	constructor (tag = tagFunction()) {
+	constructor (options, ...elements) {
 		super(); // mistake to inherit?
-		SETS.set(this, Object.freeze({ a: new Map(), r: new Map(), tag }));
+		const { tag = tagFunction(), zero = tag() } = Object(options);
+		const a = new Map(elements.map(e => [e, zero]));
+		SETS.set(this, Object.freeze({ a, r: new Map(), tag }));
 		Object.freeze(this);
 	}
 
@@ -337,8 +344,8 @@ class ORSet extends EventEmitter {
 		const { a, r } = SETS.get(anyORSet);
 		const elements = []; // "e"
 		for (const [k, v] of a) {
-			const element = [toJSON(k, ...args), Array.from(v, toNumber)];
-			if (r.has(k)) element.push(Array.from(r.get(k), toNumber));
+			const element = [toJSON(k, ...args), Array.from(v, tagString)];
+			if (r.has(k)) element.push(Array.from(r.get(k), tagString));
 			elements.push(element);
 		}
 		return { e: elements, type: 'or-set' };
@@ -348,9 +355,9 @@ class ORSet extends EventEmitter {
 
 class MCSet extends EventEmitter {
 
-	constructor (...args) {
+	constructor (...elements) {
 		super(); // mistake to inherit?
-		const e = new Map(args.map(arg => ([arg, 1])));
+		const e = new Map(elements.map(e => ([e, 1])));
 		SETS.set(this, Object.freeze({ e }));
 	}
 
