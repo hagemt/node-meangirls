@@ -33,6 +33,8 @@ describe('MCSet', () => {
 			Array.from(set).should.deepEqual([]);
 			set.insert(0).should.equal(set);
 			Array.from(set).should.deepEqual([0]);
+			set.insert(0).insert(1);
+			Array.from(set).should.deepEqual([0, 1]);
 		});
 
 	});
@@ -40,9 +42,11 @@ describe('MCSet', () => {
 	describe('#remove', () => {
 
 		it('removes elements from a set', () => {
-			const set = new MCSet(0); // singleton
-			Array.from(set).should.deepEqual([0]);
+			const set = new MCSet(0, 1);
+			Array.from(set).should.deepEqual([0, 1]);
 			set.remove(0).should.equal(set);
+			Array.from(set).should.deepEqual([1]);
+			set.remove(0).remove(1);
 			Array.from(set).should.deepEqual([]);
 		});
 
@@ -58,6 +62,11 @@ describe('MCSet', () => {
 				const set = MCSet.fromJSON(json);
 				set.should.be.instanceof(MCSet);
 				Array.from(set).should.deepEqual(elements);
+			});
+
+			it('will throw if given invalid JSON', () => {
+				const invalid = [[0, 1/2]]; // non-Integer count
+				(() => MCSet.fromJSON({ e: invalid })).should.throw();
 			});
 
 		});
