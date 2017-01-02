@@ -1,11 +1,10 @@
 /* eslint-env es6, node */
-//const { EventEmitter } = require('events');
+const { EventEmitter } = require('events');
 
 const COUNTERS = new WeakMap(); // private
 
-const isSafeNumber = n => !Number.isNaN(n) && Number.isFinite(n) && !(n < Number.EPSILON);
-
-const plusSafeNumber = a => (b = 0) => (a + b);
+const isNormal = n => !Number.isNaN(n) && Number.isFinite(n) && !(n < Number.EPSILON);
+const plusNormal = a => (b = 0) => (a + b); // curried version of +/2 for update(s)
 
 const sumValues = (map, cached = map.sumCached) => {
 	if (cached) return map.sum; // to avoid another sum
@@ -27,37 +26,24 @@ const updateMap = (map, key, update) => {
 	const newValue = update(oldValue);
 	map.set(key, newValue);
 	map.sumCached = false;
-	//return [newValue, oldValue];
+	return [newValue, oldValue];
 };
 
-class GCounter { // extends EventEmitter?
+class GCounter extends EventEmitter {
 
 	constructor () {
-		//super(); // mistake to inherit?
+		super(); // mistake to inherit?
 		COUNTERS.set(this, Object.freeze({ e: new Map() }));
-	}
-
-	merge (other) {
-		if (!(other instanceof GCounter)) {
-			throw new TypeError('expected GCounter');
-		}
-		const merged = new GCounter();
-		const { e: e0 } = COUNTERS.get(merged);
-		const { e: e1 } = COUNTERS.get(other);
-		const { e: e2 } = COUNTERS.get(this);
-		for (const [k, v] of e1) updateMap(e0, k, plusSafeNumber(v));
-		for (const [k, v] of e2) updateMap(e0, k, plusSafeNumber(v));
-		return merged;
 	}
 
 	update (delta = 1, actor = null) {
 		const number = Number(delta);
-		if (!isSafeNumber(number)) {
-			throw new Error('must #update with a safe (finite, positive) Number');
+		if (!isNormal(number)) {
+			throw new Error('must #update with a normal (and positive) Number');
 		}
 		const { e } = COUNTERS.get(this);
-		updateMap(e, actor, plusSafeNumber(number));
-		//this.emit('update', update, actor, delta);
+		const update = updateMap(e, actor, plusNormal(number));
+		this.emit('update', update, actor, delta);
 		return this;
 	}
 
@@ -71,13 +57,27 @@ class GCounter { // extends EventEmitter?
 		const { e } = COUNTERS.get(counter);
 		for (const key of Object.keys(elements)) {
 			const number = Number(elements[key]);
-			if (!isSafeNumber(number)) {
-				throw new Error(`the value for "${key}" is an unsafe Number`);
+			if (!isNormal(number)) {
+				throw new Error(`the value for "${key}" is not a safe Number`);
 			}
 			e.set(key, number);
 		}
 		return counter;
 	}
+
+	static merge (first, second) {
+		if (!(first instanceof GCounter) || !(second instanceof GCounter)) {
+			throw new TypeError('each argument must be a GCounter');
+		}
+		const self = new GCounter();
+		const { e: e0 } = COUNTERS.get(self);
+		const { e: e1 } = COUNTERS.get(first);
+		const { e: e2 } = COUNTERS.get(second);
+		for (const [k, v] of e1) updateMap(e0, k, plusNormal(v));
+		for (const [k, v] of e2) updateMap(e0, k, plusNormal(v));
+		return self;
+	}
+
 
 	static toJSON (anyGCounter) {
 		const { e } = COUNTERS.get(anyGCounter);
@@ -86,38 +86,23 @@ class GCounter { // extends EventEmitter?
 
 }
 
-class PNCounter { // extends EventEmitter?
+class PNCounter extends EventEmitter {
 
 	constructor () {
-		//super(); // mistake to inherit?
+		super(); // mistake to inherit?
 		COUNTERS.set(this, Object.freeze({ n: new Map(), p: new Map() }));
-	}
-
-	merge (other) {
-		if (!(other instanceof PNCounter)) {
-			throw new TypeError('expected PNCounter');
-		}
-		const merged = new PNCounter();
-		const { n: n0, p: p0 } = COUNTERS.get(merged);
-		const { n: n1, p: p1 } = COUNTERS.get(other);
-		const { n: n2, p: p2 } = COUNTERS.get(this);
-		for (const [k, v] of n1) updateMap(n0, k, plusSafeNumber(v));
-		for (const [k, v] of n2) updateMap(n0, k, plusSafeNumber(v));
-		for (const [k, v] of p1) updateMap(p0, k, plusSafeNumber(v));
-		for (const [k, v] of p2) updateMap(p0, k, plusSafeNumber(v));
-		return merged;
 	}
 
 	update (delta = 1, actor = null) {
 		const number = Number(delta);
 		const abs = Math.abs(number);
-		if (!isSafeNumber(abs)) {
-			throw new Error('must #update with a safe (finite) Number');
+		if (!isNormal(abs)) {
+			throw new Error('must #update with a safe (any normal) Number');
 		}
 		const sign = Math.sign(number);
 		const { n, p } = COUNTERS.get(this);
-		updateMap((sign === 1) ? p : n, actor, plusSafeNumber(abs));
-		//this.emit('update', update, actor, delta);
+		const update = updateMap((sign === 1) ? p : n, actor, plusNormal(abs));
+		this.emit('update', update, actor, delta);
 		return this;
 	}
 
@@ -131,19 +116,34 @@ class PNCounter { // extends EventEmitter?
 		const { n, p } = COUNTERS.get(counter);
 		for (const key of Object.keys(positives)) {
 			const number = Number(positives[key]);
-			if (!isSafeNumber(number)) {
-				throw new Error(`the value for "${key}" is an unsafe Number`);
+			if (!isNormal(number)) {
+				throw new Error(`the value for "${key}" is not a safe Number`);
 			}
 			p.set(key, number);
 		}
 		for (const key of Object.keys(negatives)) {
 			const number = Number(negatives[key]);
-			if (!isSafeNumber(number)) {
-				throw new Error(`the value for "${key}" is an unsafe Number`);
+			if (!isNormal(number)) {
+				throw new Error(`the value for "${key}" is not a safe Number`);
 			}
 			n.set(key, number);
 		}
 		return counter;
+	}
+
+	static merge (first, second) {
+		if (!(first instanceof PNCounter) || !(second instanceof PNCounter)) {
+			throw new TypeError('each argument must be a PNCounter');
+		}
+		const self = new PNCounter();
+		const { n: n0, p: p0 } = COUNTERS.get(self);
+		const { n: n1, p: p1 } = COUNTERS.get(first);
+		const { n: n2, p: p2 } = COUNTERS.get(second);
+		for (const [k, v] of n1) updateMap(n0, k, plusNormal(v));
+		for (const [k, v] of n2) updateMap(n0, k, plusNormal(v));
+		for (const [k, v] of p1) updateMap(p0, k, plusNormal(v));
+		for (const [k, v] of p2) updateMap(p0, k, plusNormal(v));
+		return self;
 	}
 
 	static toJSON (anyPNCounter) {
@@ -153,15 +153,14 @@ class PNCounter { // extends EventEmitter?
 
 }
 
-const merge2 = (a, b) => a.merge(b); // "static"
-Object.defineProperty(merge2, 'name', { value: 'merge' });
-
+/* istanbul ignore next */
 for (const T of [GCounter, PNCounter]) {
-	/* istanbul ignore next */
 	T.prototype.inspect = function inspect () {
 		return T.toJSON(this);
 	};
-	Object.defineProperty(T, 'merge', { value: merge2 });
+	T.prototype.merge = function merge (other) {
+		return T.merge(this, other);
+	};
 }
 
 module.exports = { GCounter, PNCounter };
