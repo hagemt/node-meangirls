@@ -6,8 +6,10 @@ const SETS = new WeakMap(); // private
 // TODO (tohagema): refactor into class modules?
 // TODO (tohagema): implement get size uniformly?
 
-const toJSON = (object = null, ...args) => {
+const toJSON = (object, ...args) => {
+	/* istanbul ignore else */
 	if (typeof object !== 'object') return object;
+	/* istanbul ignore next */
 	return JSON.stringify(object, ...args);
 };
 
@@ -25,8 +27,8 @@ class GSet extends EventEmitter {
 
 	insert (element) {
 		const { e } = SETS.get(this);
+		this.emit('insert', element);
 		e.add(element); // returns Set
-		this.emit('element', element);
 		return this;
 	}
 
@@ -236,9 +238,9 @@ class LWWESet extends EventEmitter {
 		const { a, bias, r } = SETS.get(anyLWWESet);
 		const elements = []; // "e"
 		for (const [k, v] of a) {
-			const element = [toJSON(k, ...args), +v];
-			if (r.has(k)) element.push(+r.get(k));
-			elements.push(element);
+			const ee = [toJSON(k, ...args), +v];
+			if (r.has(k)) ee.push(+r.get(k));
+			elements.push(ee);
 		}
 		return { bias, e: elements, type: 'lww-e-set' };
 	}
@@ -249,13 +251,11 @@ const getMapSet = (k, m = new Map()) => m.has(k) ? m.get(k) : new Set();
 const isString = s => (typeof s === 'string') || (s instanceof String);
 const tagString = s => s.toString().replace(/^Symbol\(|\)$/g, '');
 
-const memoize = (f, resolver = (first => first)) => {
-	if (typeof f !== 'function' || typeof resolver !== 'function') {
-		throw new TypeError('can only memoize Function(s)');
-	}
+const memoize = (f, resolver) => {
 	const cache = new Map();
 	const g = (...args) => {
 		const key = resolver(...args);
+		/* istanbul ignore next */
 		if (cache.has(key)) {
 			return cache.get(key);
 		}
@@ -270,8 +270,8 @@ const memoize = (f, resolver = (first => first)) => {
 };
 
 const tagFunction = () => {
-	const tags = Object.assign(memoize(Symbol, String), { next: 0 });
-	return value => isString(value) ? tags(value) : tags(tags.next++);
+	const tag = Object.assign(memoize(Symbol, String), { next: 0 });
+	return any => isString(any) ? tag(any) : tag(tag.next++);
 };
 
 class ORSet extends EventEmitter {
@@ -279,9 +279,8 @@ class ORSet extends EventEmitter {
 	constructor (options, ...elements) {
 		super(); // mistake to inherit?
 		const { tag = tagFunction(), zero = tag() } = Object(options);
-		const a = new Map(elements.map(e => [e, zero]));
+		const a = new Map(elements.map(e => [e, new Set([zero])]));
 		SETS.set(this, Object.freeze({ a, r: new Map(), tag }));
-		Object.freeze(this);
 	}
 
 	contains (key) {
@@ -289,38 +288,63 @@ class ORSet extends EventEmitter {
 		if (!a.has(key)) return false;
 		if (!r.has(key)) return true;
 		const [aSet, rSet] = [a.get(key), r.get(key)];
-		return aSet.some(tag => !rSet.has(tag));
+		return !Array.from(aSet).every(tag => rSet.has(tag));
 	}
 
-	insert (key, value) {
-		const { a, tag } = SETS.get(this);
-		const tags = getMapSet(key, a);
-		a.set(key, tags.add(tag(value)));
+	insert (element, ...args) {
+		const { a, r, tag } = SETS.get(this);
+		const [aSet, rSet] = [getMapSet(element, a), getMapSet(element, r)];
+		const tags = (args.length === 0) ? [tag()] : args.map(tag);
+		if (!tags.every(tag => aSet.has(tag))) {
+			const [aSymbols, rSymbols] = [Array.from(aSet), Array.from(rSet)];
+			this.emit('insert', [element, ...tags], [aSymbols, rSymbols]);
+			for (const tag of tags) aSet.add(tag);
+			a.set(element, aSet);
+		}
 		return this;
 	}
 
-	remove (key, value) {
-		const { r, tag } = SETS.get(this);
-		const tags = getMapSet(key, r);
-		r.set(key, tags.add(tag(value)));
+	remove (element, ...args) {
+		const { a, r, tag } = SETS.get(this);
+		const [aSet, rSet] = [getMapSet(element, a), getMapSet(element, r)];
+		const tags = (args.length === 0) ? Array.from(aSet) : args.map(tag);
+		if (tags.length > 0 && !tags.every(tag => rSet.has(tag))) {
+			const [aSymbols, rSymbols] = [Array.from(aSet), Array.from(rSet)];
+			this.emit('remove', [element, ...tags], [aSymbols, rSymbols]);
+			for (const tag of tags) rSet.add(tag);
+			r.set(element, rSet);
+		}
 		return this;
 	}
 
 	* [Symbol.iterator] () {
 		const { a, r } = SETS.get(this);
 		for (const [element, aSet] of a) {
-			const rSet = tag => r.has(element) ? !r.get(element).has(tag) : true;
-			if (aSet.filter(rSet).length > 0) yield element;
+			const rSet = getMapSet(element, r); // => Set (possibly empty)
+			const removed = Array.from(aSet).every(tag => rSet.has(tag));
+			if (!removed) yield element;
 		}
 	}
 
 	static fromJSON ({ e }, ...args) {
 		const set = new ORSet();
 		const { a, r, tag } = SETS.get(set);
-		for (const [ek, ea, er] of e) {
-			const pk = JSON.parse(ek, ...args);
-			a.set(pk, new Set(Array.from(ea, tag)));
-			r.set(pk, new Set(Array.from(er, tag)));
+		const zero = tag();
+		for (const ee of e) {
+			switch (Array.isArray(ee) ? ee.length : 0) {
+			case 1:
+				a.set(JSON.parse(ee[0], ...args), new Set([zero]));
+				break;
+			case 2:
+				a.set(JSON.parse(ee[0], ...args), new Set(Array.from(ee[1], tag)));
+				break;
+			case 3:
+				a.set(JSON.parse(ee[0], ...args), new Set(Array.from(ee[1], tag)));
+				r.set(JSON.parse(ee[0], ...args), new Set(Array.from(ee[2], tag)));
+				break;
+			default:
+				throw new Error(`invalid element: ${ee}`);
+			}
 		}
 		return set;
 	}
@@ -333,10 +357,18 @@ class ORSet extends EventEmitter {
 		const { a: a0, r: r0 } = SETS.get(self);
 		const { a: a1, r: r1 } = SETS.get(first);
 		const { a: a2, r: r2 } = SETS.get(second);
-		for (const [k, v] of a1) a0.set(k, getMapSet(k, a0).add(v));
-		for (const [k, v] of a2) a0.set(k, getMapSet(k, a0).add(v));
-		for (const [k, v] of r1) r0.set(k, getMapSet(k, r0).add(v));
-		for (const [k, v] of r2) r0.set(k, getMapSet(k, r0).add(v));
+		for (const [k, v] of a1) a0.set(k, new Set(v));
+		for (const [k, v] of r1) r0.set(k, new Set(v));
+		for (const [k, v] of a2) {
+			const aSet = getMapSet(k, a0);
+			for (const s of v) aSet.add(s);
+			a0.set(k, aSet);
+		}
+		for (const [k, v] of r2) {
+			const rSet = getMapSet(k, r0);
+			for (const s of v) rSet.add(s);
+			r0.set(k, rSet);
+		}
 		return self;
 	}
 
@@ -344,9 +376,9 @@ class ORSet extends EventEmitter {
 		const { a, r } = SETS.get(anyORSet);
 		const elements = []; // "e"
 		for (const [k, v] of a) {
-			const element = [toJSON(k, ...args), Array.from(v, tagString)];
-			if (r.has(k)) element.push(Array.from(r.get(k), tagString));
-			elements.push(element);
+			const ee = [toJSON(k, ...args), Array.from(v, tagString)];
+			if (r.has(k)) ee.push(Array.from(r.get(k), tagString));
+			elements.push(ee);
 		}
 		return { e: elements, type: 'or-set' };
 	}
@@ -369,14 +401,20 @@ class MCSet extends EventEmitter {
 	insert (element) {
 		const { e } = SETS.get(this);
 		const number = e.get(element) || 0;
-		if (number % 2 === 0) e.set(element, 1 + number);
+		if (number % 2 === 0) {
+			this.emit('insert', element);
+			e.set(element, 1 + number);
+		}
 		return this;
 	}
 
 	remove (element) {
 		const { e } = SETS.get(this);
 		const number = e.get(element) || 0;
-		if (number % 2 === 1) e.set(element, 1 + number);
+		if (number % 2 === 1) {
+			this.emit('remove', element);
+			e.set(element, 1 + number);
+		}
 		return this;
 	}
 
