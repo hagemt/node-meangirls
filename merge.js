@@ -14,11 +14,13 @@ const mergeCRDTs = (...items) => {
 			if (item instanceof T) return T;
 		}
 	});
-	if (new Set(types.filter(type => !!type)).size !== 1) {
+	const typesSet = new Set(types.filter(type => !!type));
+	if (typesSet.size !== 1) { // FIXME (tohagema): options for LWWESet/ORSet?
 		const names = types.map((T = {}) => T.name || 'non-CRDT').join(', ');
 		throw new TypeError(`arguments ALL MUST have SAME CRDT (not: ${names})`);
 	}
-	return items.reduce((a, b) => a.merge(b));
+	const T = Array.from(typesSet)[0];
+	return T.merge(...items);
 };
 
 module.exports = mergeCRDTs;
