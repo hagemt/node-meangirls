@@ -49,17 +49,17 @@ class GSet extends EventEmitter {
 		return set;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof GSet) || !(second instanceof GSet)) {
+	static merge (...sets) {
+		if (!sets.every(set => set instanceof GSet)) {
 			throw new TypeError('expected GSet');
 		}
-		const self = new GSet();
-		const { e: e0 } = SETS.get(self);
-		const { e: e1 } = SETS.get(first);
-		const { e: e2 } = SETS.get(second);
-		for (const e of e1) e0.add(e);
-		for (const e of e2) e0.add(e);
-		return self;
+		const merged = new GSet(); // empty
+		const { e: e0 } = SETS.get(merged);
+		for (const set of sets ) {
+			const { e: e1 } = SETS.get(set);
+			for (const e of e1) e0.add(e);
+		}
+		return merged;
 	}
 
 	static toJSON (anyGSet, ...args) {
@@ -120,19 +120,18 @@ class TwoPSet extends EventEmitter {
 		return set;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof TwoPSet) || !(second instanceof TwoPSet)) {
+	static merge (...sets) {
+		if (!sets.every(set => set instanceof TwoPSet)) {
 			throw new TypeError('expected TwoPSet');
 		}
-		const self = new TwoPSet();
-		const { a: a0, r: r0 } = SETS.get(self);
-		const { a: a1, r: r1 } = SETS.get(first);
-		const { a: a2, r: r2 } = SETS.get(second);
-		for (const e of a1) a0.add(e);
-		for (const e of a2) a0.add(e);
-		for (const e of r1) r0.add(e);
-		for (const e of r2) r0.add(e);
-		return self;
+		const merged = new TwoPSet(); // empty
+		const { a: a0, r: r0 } = SETS.get(merged);
+		for (const set of sets) {
+			const { a, r } = SETS.get(set);
+			for (const e of a) a0.add(e);
+			for (const e of r) r0.add(e);
+		}
+		return merged;
 	}
 
 	static toJSON (anyTwoPSet, ...args) {
@@ -215,23 +214,23 @@ class LWWESet extends EventEmitter {
 		return set;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof LWWESet) || !(second instanceof LWWESet)) {
-			throw new TypeError('expected LWWESet');
+	static merge (options, ...sets) {
+		const { bias = 'a' } = Object(options);
+		if (!sets.every(set => set instanceof LWWESet && set.bias === bias)) {
+			throw new TypeError(`expected LWWESet with bias=${bias}`);
 		}
-		const self = new LWWESet();
-		const { a: a0, r: r0 } = SETS.get(self);
-		const { a: a1, r: r1 } = SETS.get(first);
-		const { a: a2, r: r2 } = SETS.get(second);
-		for (const [k, v] of a1) a0.set(k, v);
-		for (const [k, v] of r1) r0.set(k, v);
-		for (const [k, v] of a2) {
-			if (!(a0.has(k) && v < a0.get(k))) a0.set(k, v);
+		const merged = new LWWESet(options); // empty
+		const { a: a0, r: r0 } = SETS.get(merged);
+		for (const set of sets) {
+			const { a: a1, r: r1 } = SETS.get(set);
+			for (const [k, v] of a1) {
+				if (!(a0.has(k) && v < a0.get(k))) a0.set(k, v);
+			}
+			for (const [k, v] of r1) {
+				if (!(r0.has(k) && v < r0.get(k))) r0.set(k, v);
+			}
 		}
-		for (const [k, v] of r2) {
-			if (!(r0.has(k) && v < r0.get(k))) r0.set(k, v);
-		}
-		return self;
+		return merged;
 	}
 
 	static toJSON (anyLWWESet, ...args) {
@@ -283,11 +282,11 @@ class ORSet extends EventEmitter {
 		SETS.set(this, Object.freeze({ a, r: new Map(), tag }));
 	}
 
-	contains (key) {
+	contains (element) {
 		const { a, r } = SETS.get(this);
-		if (!a.has(key)) return false;
-		if (!r.has(key)) return true;
-		const [aSet, rSet] = [a.get(key), r.get(key)];
+		if (!a.has(element)) return false;
+		if (!r.has(element)) return true;
+		const [aSet, rSet] = [a.get(element), r.get(element)];
 		return !Array.from(aSet).every(tag => rSet.has(tag));
 	}
 
@@ -349,27 +348,27 @@ class ORSet extends EventEmitter {
 		return set;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof ORSet) || !(second instanceof ORSet)) {
-			throw new TypeError('expected ORSet');
+	static merge (options, ...sets) {
+		const { tag = sets[0].tag } = Object(options);
+		if (!sets.every(set => set instanceof ORSet && set.tag === tag)) {
+			throw new TypeError('expected ORSet with same tag Function');
 		}
-		const self = new ORSet();
-		const { a: a0, r: r0 } = SETS.get(self);
-		const { a: a1, r: r1 } = SETS.get(first);
-		const { a: a2, r: r2 } = SETS.get(second);
-		for (const [k, v] of a1) a0.set(k, new Set(v));
-		for (const [k, v] of r1) r0.set(k, new Set(v));
-		for (const [k, v] of a2) {
-			const aSet = getMapSet(k, a0);
-			for (const s of v) aSet.add(s);
-			a0.set(k, aSet);
+		const merged = new ORSet(options); // empty
+		const { a: a0, r: r0 } = SETS.get(merged);
+		for (const set of sets) {
+			const { a, r } = SETS.get(set);
+			for (const [k, v] of a) {
+				const aSet = getMapSet(k, a0);
+				for (const s of v) aSet.add(s);
+				a0.set(k, aSet);
+			}
+			for (const [k, v] of r) {
+				const rSet = getMapSet(k, r0);
+				for (const s of v) rSet.add(s);
+				r0.set(k, rSet);
+			}
 		}
-		for (const [k, v] of r2) {
-			const rSet = getMapSet(k, r0);
-			for (const s of v) rSet.add(s);
-			r0.set(k, rSet);
-		}
-		return self;
+		return merged;
 	}
 
 	static toJSON (anyORSet, ...args) {
@@ -437,21 +436,19 @@ class MCSet extends EventEmitter {
 		return set;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof MCSet) || !(second instanceof MCSet)) {
+	static merge (...sets) {
+		if (!sets.every(set => set instanceof MCSet)) {
 			throw new TypeError('expected MCSet');
 		}
-		const self = new MCSet();
-		const { e: e0 } = SETS.get(self);
-		const { e: e1 } = SETS.get(first);
-		const { e: e2 } = SETS.get(second);
-		for (const [element, n] of e1) {
-			e0.set(element, n + (e0.get(element) || 0));
+		const merged = new MCSet(); // empty
+		const { e: e0 } = SETS.get(merged);
+		for (const set of sets) {
+			const { e } = SETS.get(set);
+			for (const [element, n] of e) {
+				e0.set(element, n + (e0.get(element) || 0));
+			}
 		}
-		for (const [element, n] of e2) {
-			e0.set(element, n + (e0.get(element) || 0));
-		}
-		return self;
+		return merged;
 	}
 
 	static toJSON (anyMCSet, ...args) {
@@ -466,9 +463,6 @@ class MCSet extends EventEmitter {
 for (const T of [GSet, TwoPSet, LWWESet, ORSet, MCSet]) {
 	T.prototype.inspect = function inspect () {
 		return T.toJSON(this);
-	};
-	T.prototype.merge = function merge (other) {
-		return T.merge(this, other);
 	};
 }
 
