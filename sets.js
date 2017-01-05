@@ -32,6 +32,13 @@ class GSet extends EventEmitter {
 		return this;
 	}
 
+	remove (element) {
+		if (this.contains(element)) {
+			throw new Error(`${element} cannot be removed from GSet`);
+		}
+		return this;
+	}
+
 	get size () {
 		const { e } = SETS.get(this);
 		return e.size;
@@ -246,15 +253,15 @@ class LWWESet extends EventEmitter {
 
 }
 
-const getMapSet = (k, m = new Map()) => m.has(k) ? m.get(k) : new Set();
-const isString = s => (typeof s === 'string') || (s instanceof String);
-const tagString = s => s.toString().replace(/^Symbol\(|\)$/g, '');
+const getMapSet = (key, map) => map.has(key) ? map.get(key) : new Set();
+const isString = _ => (typeof _ === 'string') || (_ instanceof String);
+const tagString = _ => _.toString().replace(/^Symbol\(|\)$/g, '');
 
 const memoize = (f, resolver) => {
 	const cache = new Map();
 	const g = (...args) => {
 		const key = resolver(...args);
-		/* istanbul ignore next */
+		/* istanbul ignore else */
 		if (cache.has(key)) {
 			return cache.get(key);
 		}
@@ -292,9 +299,10 @@ class ORSet extends EventEmitter {
 
 	insert (element, ...args) {
 		const { a, r, tag } = SETS.get(this);
+		const t = new Set(args); // Array.from(t, tag) => tags:Array<Symbol>
 		const [aSet, rSet] = [getMapSet(element, a), getMapSet(element, r)];
-		const tags = (args.length === 0) ? [tag()] : args.map(tag);
-		if (!tags.every(tag => aSet.has(tag))) {
+		const tags = (t.size === 0) ? [tag()].concat(...rSet) : Array.from(t, tag);
+		if (tags.length > 0 && !tags.every(tag => aSet.has(tag))) {
 			const [aSymbols, rSymbols] = [Array.from(aSet), Array.from(rSet)];
 			this.emit('insert', [element, ...tags], [aSymbols, rSymbols]);
 			for (const tag of tags) aSet.add(tag);
@@ -305,8 +313,9 @@ class ORSet extends EventEmitter {
 
 	remove (element, ...args) {
 		const { a, r, tag } = SETS.get(this);
+		const t = new Set(args); // Array.from(t, tag) => Array<Symbol>
 		const [aSet, rSet] = [getMapSet(element, a), getMapSet(element, r)];
-		const tags = (args.length === 0) ? Array.from(aSet) : args.map(tag);
+		const tags = (t.size === 0) ? Array.from(aSet) : Array.from(t, tag);
 		if (tags.length > 0 && !tags.every(tag => rSet.has(tag))) {
 			const [aSymbols, rSymbols] = [Array.from(aSet), Array.from(rSet)];
 			this.emit('remove', [element, ...tags], [aSymbols, rSymbols]);

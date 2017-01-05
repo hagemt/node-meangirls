@@ -1,14 +1,9 @@
 /* eslint-env es6, mocha, node */
-const assert = require('assert');
 const meangirls = require('..');
 
-describe('meangirls', () => {
+describe('Global module exports', () => {
 
-	it('is a library for CRDTs', () => {
-		assert(meangirls);
-	});
-
-	describe('merge', () => {
+	describe('meangirls.merge', () => {
 
 		const gc = new meangirls.GCounter();
 		const pn = new meangirls.PNCounter();
@@ -45,7 +40,7 @@ describe('meangirls', () => {
 
 	});
 
-	describe('parse', () => {
+	describe('meangirls.parse', () => {
 
 		it('can obtain a GCounter from JSON', () => {
 			const counter = meangirls.parse({

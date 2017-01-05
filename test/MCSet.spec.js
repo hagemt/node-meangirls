@@ -46,7 +46,7 @@ describe('MCSet', () => {
 			Array.from(set).should.deepEqual([0, 1]);
 			set.remove(0).should.equal(set);
 			Array.from(set).should.deepEqual([1]);
-			set.remove(0).remove(1);
+			set.remove(0).remove(1).remove(2);
 			Array.from(set).should.deepEqual([]);
 		});
 

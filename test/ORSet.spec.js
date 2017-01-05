@@ -31,11 +31,11 @@ describe('ORSet', () => {
 			Array.from(set).should.deepEqual([0]);
 		});
 
-		it('is idempotent', () => {
+		it('supports multiple tags', () => {
 			const set = new ORSet();
-			set.insert(0, 'tag');
+			set.insert(0, 'a'); // tag: Symbol(0)
 			Array.from(set).should.deepEqual([0]);
-			set.insert(0, 'tag');
+			set.insert(0, 'b'); // tag: Symbol(1)
 			Array.from(set).should.deepEqual([0]);
 		});
 
@@ -47,6 +47,12 @@ describe('ORSet', () => {
 			const set = new ORSet(null, 0);
 			Array.from(set).should.deepEqual([0]);
 			set.remove(0).should.equal(set);
+			Array.from(set).should.deepEqual([]);
+		});
+
+		it('supports multiple tags', () => {
+			const set = new ORSet(null, 0).insert(1, 'a').insert(1, 'a');
+			set.remove(0).remove(1, 'a').remove(2);
 			Array.from(set).should.deepEqual([]);
 		});
 

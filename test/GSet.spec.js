@@ -37,6 +37,16 @@ describe('GSet', () => {
 
 	});
 
+	describe('#remove', () => {
+
+		it('throws if and only if the GSet contains said element', () => {
+			const set = new GSet(1); // singleton
+			set.remove(0).should.equal(set); // no-op
+			(() => set.remove(1)).should.throw();
+		});
+
+	});
+
 	describe('static', () => {
 
 		describe('fromJSON', () => {
