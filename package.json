@@ -1,7 +1,6 @@
 {
   "name": "meangirls",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
   "author": "Tor Hagemann <tor.hagemann@gmail.com>",
   "description": "JavaScript re-implementation of Aphyr's gem for CRDTs",
   "homepage": "https://github.com/hagemt/meangirls#readme",
