@@ -1,12 +1,12 @@
 {
   "name": "meangirls",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Tor Hagemann <tor.hagemann@gmail.com>",
   "description": "JavaScript re-implementation of Aphyr's gem for CRDTs",
-  "homepage": "https://github.com/hagemt/meangirls#readme",
+  "homepage": "https://github.com/hagemt/node-meangirls#readme",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hagemt/meangirls/issues"
+    "url": "https://github.com/hagemt/node-meangirls/issues"
   },
   "devDependencies": {
     "eslint": "^3",
@@ -26,7 +26,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hagemt/meangirls.git"
+    "url": "git+https://github.com/hagemt/node-meangirls.git"
   },
   "scripts": {
     "coverage": "nyc",
