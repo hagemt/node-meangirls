@@ -32,7 +32,7 @@
     "coverage": "nyc",
     "eslint": "eslint .",
     "test": "npm run coverage -- --reporter text mocha",
-    "test:report": "npm run coverage -- --reporter html mocha",
+    "test:report": "npm run coverage -- --reporter html --report-dir test/coverage mocha --reporter xunit --reporter-options output=test/report.xml",
     "test:watch": "watch --color 'npm test -- --colors --reporter min'",
     "posttest": "npm run eslint"
   }

@@ -89,7 +89,7 @@ describe('LWWESet', () => {
 				const options = { zero: new Date(0) };
 				const one = new LWWESet(options, 1);
 				const two = new LWWESet(options, 2);
-				const three = LWWESet.merge(one, two);
+				const three = LWWESet.merge(null, one, two);
 				three.should.be.instanceof(LWWESet);
 				Array.from(three).should.deepEqual([1, 2]);
 			});
@@ -98,7 +98,7 @@ describe('LWWESet', () => {
 				const options = { zero: new Date(0) };
 				const one = new LWWESet(options, 1, 2).remove(2, new Date(0));
 				const two = new LWWESet(options, 1).remove(1, new Date(1));
-				Array.from(LWWESet.merge(one, two)).should.deepEqual([2]);
+				Array.from(LWWESet.merge(null, one, two)).should.deepEqual([2]);
 			});
 
 			it('follows last-write-wins sematics', () => {
@@ -106,14 +106,14 @@ describe('LWWESet', () => {
 				const two = new LWWESet({ zero: new Date(0) }, 0);
 				one.remove(0, new Date(1)).contains(0).should.equal(true);
 				two.remove(0, new Date(2)).contains(0).should.equal(false);
-				LWWESet.merge(one, two).contains(0).should.equal(false);
-				LWWESet.merge(two, one).contains(0).should.equal(false);
+				LWWESet.merge(null, one, two).contains(0).should.equal(false);
+				LWWESet.merge(null, two, one).contains(0).should.equal(false);
 			});
 
 			it('throws if either argument is not an LWWESet', () => {
 				const set = new LWWESet();
-				(() => LWWESet.merge(set, null)).should.throw();
-				(() => LWWESet.merge(null, set)).should.throw();
+				(() => LWWESet.merge(null, set, null)).should.throw();
+				(() => LWWESet.merge(null, null, set)).should.throw();
 			});
 
 		});

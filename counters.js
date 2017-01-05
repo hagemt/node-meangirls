@@ -65,17 +65,17 @@ class GCounter extends EventEmitter {
 		return counter;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof GCounter) || !(second instanceof GCounter)) {
+	static merge (...counters) {
+		if (!counters.every(counter => counter instanceof GCounter)) {
 			throw new TypeError('each argument must be a GCounter');
 		}
-		const self = new GCounter();
-		const { e: e0 } = COUNTERS.get(self);
-		const { e: e1 } = COUNTERS.get(first);
-		const { e: e2 } = COUNTERS.get(second);
-		for (const [k, v] of e1) updateMap(e0, k, plusNormal(v));
-		for (const [k, v] of e2) updateMap(e0, k, plusNormal(v));
-		return self;
+		const merged = new GCounter(); // empty
+		const { e: e0 } = COUNTERS.get(merged);
+		for (const counter of counters) {
+			const { e } = COUNTERS.get(counter);
+			for (const [k, v] of e) updateMap(e0, k, plusNormal(v));
+		}
+		return merged;
 	}
 
 
@@ -131,19 +131,18 @@ class PNCounter extends EventEmitter {
 		return counter;
 	}
 
-	static merge (first, second) {
-		if (!(first instanceof PNCounter) || !(second instanceof PNCounter)) {
+	static merge (...counters) {
+		if (!counters.every(counter => counter instanceof PNCounter)) {
 			throw new TypeError('each argument must be a PNCounter');
 		}
-		const self = new PNCounter();
-		const { n: n0, p: p0 } = COUNTERS.get(self);
-		const { n: n1, p: p1 } = COUNTERS.get(first);
-		const { n: n2, p: p2 } = COUNTERS.get(second);
-		for (const [k, v] of n1) updateMap(n0, k, plusNormal(v));
-		for (const [k, v] of n2) updateMap(n0, k, plusNormal(v));
-		for (const [k, v] of p1) updateMap(p0, k, plusNormal(v));
-		for (const [k, v] of p2) updateMap(p0, k, plusNormal(v));
-		return self;
+		const merged = new PNCounter(); // empty
+		const { n: n0, p: p0 } = COUNTERS.get(merged);
+		for (const counter of counters) {
+			const { n, p } = COUNTERS.get(counter);
+			for (const [k, v] of n) updateMap(n0, k, plusNormal(v));
+			for (const [k, v] of p) updateMap(p0, k, plusNormal(v));
+		}
+		return merged;
 	}
 
 	static toJSON (anyPNCounter) {

@@ -77,17 +77,17 @@ describe('ORSet', () => {
 		describe('merge', () => {
 
 			it('combines exactly two ORSets', () => {
-				const one = new ORSet().insert(1);
-				const two = new ORSet().insert(2);
-				const three = ORSet.merge(one, two);
+				const one = new ORSet().insert(1).remove(1);
+				const two = new ORSet().insert(2).remove(2);
+				const three = ORSet.merge(null, one, two);
 				three.should.be.instanceof(ORSet);
-				Array.from(three).should.deepEqual([1, 2]);
+				Array.from(three).should.deepEqual([]);
 			});
 
-			it('throws if either arguments is not an ORSet', () => {
+			it('throws if either argument is not an ORSet', () => {
 				const set = new ORSet();
-				(() => ORSet.merge(set, null)).should.throw();
-				(() => ORSet.merge(null, set)).should.throw();
+				(() => ORSet.merge(null, set, null)).should.throw();
+				(() => ORSet.merge(null, null, set)).should.throw();
 			})
 
 		});

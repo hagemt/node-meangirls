@@ -43,12 +43,6 @@ describe('meangirls', () => {
 			(() => meangirls.merge(gc, pn, gs)).should.throw();
 		});
 
-		it('does nothing to a single CRDT', () => {
-			meangirls.merge(gc).should.equal(gc);
-			meangirls.merge(pn).should.equal(pn);
-			meangirls.merge(gs).should.equal(gs);
-		});
-
 	});
 
 	describe('parse', () => {
