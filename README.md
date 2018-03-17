@@ -1,7 +1,8 @@
 meangirls
 =========
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/hagemt/node-meangirls.svg)](https://greenkeeper.io/)
+[![Travis CI badge](https://api.travis-ci.org/hagemt/node-meangirls.svg?branch=master)](https://travis-ci.org/hagemt/node-meangirls)
+[![Greenkeeper badge](https://badges.greenkeeper.io/hagemt/node-meangirls.svg)](https://account.greenkeeper.io/account/hagemt)
 
 Serializable data types for eventually-consistent systems. (in JavaScript)
 
