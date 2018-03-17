@@ -1,6 +1,8 @@
 meangirls
 =========
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/hagemt/node-meangirls.svg)](https://greenkeeper.io/)
+
 Serializable data types for eventually-consistent systems. (in JavaScript)
 
 *WARNING*: This package should be considered very close to "alpha" in quality.
