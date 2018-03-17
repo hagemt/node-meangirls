@@ -8,15 +8,19 @@
   "bugs": {
     "url": "https://github.com/hagemt/node-meangirls/issues"
   },
+  "dependencies": {},
   "devDependencies": {
-    "eslint": "^4.19.0",
-    "mocha": "^5.0.4",
-    "mochawesome": "^3.0.2",
-    "nyc": "^11.6.0",
-    "should": "^13.2.1"
+    "eslint": "4.19.0",
+    "mocha": "5.0.4",
+    "mochawesome": "3.0.2",
+    "nyc": "11.6.0",
+    "should": "13.2.1"
   },
   "eslint": {
     "extends": "eslint:recommended"
+  },
+  "engines": {
+    "node": ">=4.0.0"
   },
   "keywords": [
     "Convergent",
