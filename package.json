@@ -34,7 +34,9 @@
   },
   "scripts": {
     "coverage": "nyc",
+    "dev": "npm run test:watch",
     "eslint": "eslint .",
+    "start": "npm run test:watch",
     "test": "npm run coverage -- --reporter text mocha --reporter mochawesome --reporter-options reportDir=docs,reportFilename=index",
     "test:jenkins": "npm run coverage -- --reporter html --report-dir test/coverage mocha --reporter xunit --reporter-options output=test/report.xml",
     "test:watch": "watch --color 'npm test -- --colors --reporter min'",

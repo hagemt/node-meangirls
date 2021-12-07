@@ -1,18 +1,30 @@
-meangirls
-=========
+# meangirls
 
 [![Travis CI badge](https://api.travis-ci.org/hagemt/node-meangirls.svg?branch=master)](https://travis-ci.org/hagemt/node-meangirls)
-[![Greenkeeper badge](https://badges.greenkeeper.io/hagemt/node-meangirls.svg)](https://account.greenkeeper.io/account/hagemt)
-[![Coverage Status](https://coveralls.io/repos/github/hagemt/node-meangirls/badge.svg?branch=master)](https://coveralls.io/github/hagemt/node-meangirls?branch=master)
 
-Serializable data types for eventually-consistent systems. (in JavaScript)
+Serialize-able data types for resilient eventually-consistent subsystems. (in JavaScript, i.e. ES6 = ECMA 2015)
 
-*WARNING*: This package should be considered very close to "alpha" in quality.
+*DISCLAIMER*: This package is considered "beta" in build quality. Vet it for use cases, just like all other dependencies.
 
-We have not undergone trials in production nor rigorous performance characterization.
+It has full test coverage; however, it has NOT undergone trials in production nor rigorous performance characterization.
+
+## Releases
 
 This package follows Semantic Versioning 2.0.0, with one additional constraint:
 
-On odd minor version number indicates a package intended for development, only.
+An odd minor version (e.g. 0.1.2) indicates the intention for development purposes.
 
-Please file bugs (GitHub issues) and/or open pull-requests; contributions appreciated.
+Please file bugs (GitHub issues) and/or open pull-requests; contributors are welcome.
+
+## Use Cases
+
+Counters and sets are particularly useful for ledgers.
+
+1. They are simple to merge and "tack on" adjustments in USD and other currencies
+2. Attach metadata or a "capped" grow-only counter for outlays in customers' favor
+3. Limit buy-back charges (in part or aggregate to the amount originally billed)
+
+For example, if an account has transaction groups relevant to an invoice:
+
+* Use one or more grow-only (G) counters or PN counter(s) for pay/refunds
+* Use a set of IDs for the counter group(s) relevant to any one account

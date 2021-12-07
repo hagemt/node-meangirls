@@ -1,5 +1,4 @@
 module.exports = {
-
 	env: {
 		es6: true,
 		node: true,
@@ -22,8 +21,11 @@ module.exports = {
 		'node',
 	],
 
+	//noInlineConfig: true,
+	//reportUnusedDisableDirectives: true,
+	root: true,
+
 	rules: {
 		'import/unambiguous': 'off',
 	},
-
 }
