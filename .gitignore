@@ -1,6 +1,4 @@
-docs
-node_modules
-npm-debug.log*
-.nyc_output
-test/coverage
-test/report.xml
+*.DS_Store
+/.nyc_output
+/coverage
+/node_modules

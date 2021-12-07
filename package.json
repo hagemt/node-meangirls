@@ -17,11 +17,16 @@
     "mocha": "9.1.3",
     "mochawesome": "7.0.1",
     "nyc": "15.1.0",
+    "serve": "13.0.2",
     "should": "13.2.3"
   },
   "engines": {
     "node": ">=6.0.0"
   },
+  "eslintIgnore": [
+    "coverage",
+    "docs"
+  ],
   "keywords": [
     "Convergent",
     "Replicated",
@@ -33,13 +38,15 @@
     "url": "git+https://github.com/hagemt/node-meangirls.git"
   },
   "scripts": {
-    "coverage": "nyc",
+    "coverage": "nyc -- npm run mocha:docs",
+    "coverage:serve": "serve docs",
     "dev": "npm run test:watch",
     "eslint": "eslint .",
+    "mocha": "mocha --require should",
+    "mocha:docs": "npm run mocha -- --reporter mochawesome --reporter-options 'reportDir=docs,reportFilename=index'",
     "start": "npm run test:watch",
-    "test": "npm run coverage -- --reporter text mocha --reporter mochawesome --reporter-options reportDir=docs,reportFilename=index",
-    "test:jenkins": "npm run coverage -- --reporter html --report-dir test/coverage mocha --reporter xunit --reporter-options output=test/report.xml",
-    "test:watch": "watch --color 'npm test -- --colors --reporter min'",
+    "test": "npm run coverage",
+    "test:watch": "watch --color 'npm run mocha -- --colors --reporter min'",
     "posttest": "npm run eslint"
   }
 }
