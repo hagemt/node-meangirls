@@ -7,9 +7,7 @@ const SETS = new WeakMap() // private
 // TODO (tohagema): implement get size uniformly?
 
 const toJSON = (object, ...args) => {
-	/* istanbul ignore else */
 	if (typeof object !== 'object') return object
-	/* istanbul ignore next */
 	return JSON.stringify(object, ...args)
 }
 
@@ -255,7 +253,6 @@ const memoize = (f, resolver) => {
 	const cache = new Map()
 	const g = (...args) => {
 		const key = resolver(...args)
-		/* istanbul ignore else */
 		if (cache.has(key)) {
 			return cache.get(key)
 		}
@@ -269,6 +266,7 @@ const memoize = (f, resolver) => {
 	})
 }
 
+// the "tag" function generates a monotonic sequence
 const tagFunction = () => {
 	const tag = Object.assign(memoize(Symbol, String), { next: 0 })
 	return (any) => (isString(any) ? tag(any) : tag(tag.next++))
@@ -458,7 +456,6 @@ class MCSet extends EventEmitter {
 	}
 }
 
-/* istanbul ignore next */
 for (const T of [GSet, TwoPSet, LWWESet, ORSet, MCSet]) {
 	T.prototype.inspect = function inspect() {
 		return T.toJSON(this)

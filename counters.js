@@ -149,7 +149,6 @@ class PNCounter extends EventEmitter {
 	}
 }
 
-/* istanbul ignore next */
 for (const T of [GCounter, PNCounter]) {
 	T.prototype.inspect = function inspect() {
 		return T.toJSON(this)
