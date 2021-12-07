@@ -9,20 +9,20 @@ module.exports = {
 		'plugin:import/recommended',
 		'plugin:mocha/recommended',
 		'plugin:node/recommended',
+		'plugin:prettier/recommended',
+		'prettier',
 	],
 
 	parserOptions: {
 		ecmaVersion: 2015,
 	},
 
-	plugins: [
-		'import',
-		'mocha',
-		'node',
-	],
+	plugins: ['import', 'mocha', 'node', 'prettier'],
 
 	//noInlineConfig: true,
-	//reportUnusedDisableDirectives: true,
+
+	reportUnusedDisableDirectives: true,
+
 	root: true,
 
 	rules: {
