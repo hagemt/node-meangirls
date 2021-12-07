@@ -1,13 +1,12 @@
 ---
 branches:
   only:
-    - master
-    - /^greenkeeper/.*$/
+    - main
 cache:
   directories:
     - "node_modules"
 install:
-  - npm install --ignore-scripts
+  - yarn install --ignore-platform
 language: node_js
 node_js:
   - "lts/*"

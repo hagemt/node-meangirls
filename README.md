@@ -1,12 +1,10 @@
 # meangirls
 
-[![Travis CI badge](https://api.travis-ci.org/hagemt/node-meangirls.svg?branch=master)](https://travis-ci.org/hagemt/node-meangirls)
+[![Travis CI badge](https://api.travis-ci.com/hagemt/node-meangirls.svg?branch=main)](https://travis-ci.org/hagemt/node-meangirls)
 
 Serialize-able data types for resilient eventually-consistent subsystems. (in JavaScript, i.e. ES6 = ECMA 2015)
 
-*DISCLAIMER*: This package is considered "beta" in build quality. Vet it for use cases, just like all other dependencies.
-
-It has full test coverage; however, it has NOT undergone trials in production nor rigorous performance characterization.
+*DISCLAIMER*: This package is considered "beta" in build quality. Vet it for use cases, just like all other dependencies. We currently enjoy full test coverage; however, not all types have undergone trials in production nor rigorous performance characterization.
 
 ## Releases
 
